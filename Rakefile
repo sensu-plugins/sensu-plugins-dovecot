@@ -6,8 +6,6 @@ require 'rubocop/rake_task'
 require 'yard'
 require 'yard/rake/yardoc_task'
 
-args = [:spec, :make_bin_executable, :yard, :rubocop, :check_binstubs]
-
 YARD::Rake::YardocTask.new do |t|
   OTHER_PATHS = %w().freeze
   t.files = ['lib/**/*.rb', 'bin/**/*.rb', OTHER_PATHS]
@@ -22,19 +20,21 @@ end
 
 desc 'Make all plugins executable'
 task :make_bin_executable do
-  `chmod -R +x bin/*`
+  `chmod -R +x bin/*` unless Dir.glob('bin/*').empty?
 end
 
 desc 'Test for binstubs'
 task :check_binstubs do
-  bin_list = Gem::Specification.load('sensu-plugins-load-checks.gemspec').executables
-  bin_list.each do |b|
-    `which #{ b }`
-    unless $CHILD_STATUS.success?
-      puts "#{b} was not a binstub"
-      exit
+  unless Dir.glob('bin/**/*.rb').empty?
+    bin_list = Gem::Specification.load('sensu-plugins-nrpe.gemspec').executables
+    bin_list.each do |b|
+      `which #{ b }`
+      unless $CHILD_STATUS.success?
+        puts "#{b} was not a binstub"
+        exit
+      end
     end
   end
 end
 
-task default: args
+task default: [:spec, :make_bin_executable, :yard, :rubocop, :check_binstubs]
